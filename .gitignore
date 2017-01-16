@@ -1,0 +1,5 @@
+.vagrant
+config.yml
+provisioning/playbook.retry
+provisioning/vars.yml
+
