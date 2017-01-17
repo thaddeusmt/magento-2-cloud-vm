@@ -1,0 +1,16 @@
+---
+
+# url
+site_url: my-site.local
+
+# mysql database 
+mysql_database: db_name
+mysql_user: db_user
+mysql_pass: db_pass
+
+# magento admin url, etc?
+admin_email: 
+admin_username:
+admin_password:
+admin_url: 
+

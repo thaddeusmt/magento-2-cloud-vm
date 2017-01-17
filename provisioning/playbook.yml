@@ -1,0 +1,286 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  
+  vars_files:
+    - vars.yml
+  
+  tasks:
+  
+    - name: update apt cache
+      apt: update_cache=yes
+      
+    - name: Install packages and python
+      apt: name={{item}} state=present update_cache=yes
+      with_items:
+        - python
+        - vim
+        - curl
+        - git
+        - build-essential
+        - python-dev
+        - python-pip
+        - libmysqlclient-dev
+        - python-mysqldb
+        
+    - name: Install Python python pexpect
+      pip:
+        name: pexpect
+        
+
+  ### install nginx
+    - name: Adding Nginx APT repository key
+      apt_key:
+        url: "http://nginx.org/keys/nginx_signing.key"
+        state: present
+
+    - name: Add official Nginx APT repository
+      apt_repository:
+        repo: "deb http://nginx.org/packages/debian/ jessie nginx"
+        state: present
+        filename: 'nginx'
+        
+    - name: Add official Nginx APT repository
+      apt_repository:
+        repo: "deb-src http://nginx.org/packages/debian/ jessie nginx"
+        state: present
+        filename: 'nginx'
+
+    #name: "nginx={{nginx_version}}"
+    - name: Install Nginx
+      apt: 
+        #name: "nginx=1.11.6"
+        name: nginx
+        state: present
+        cache_valid_time: 3600
+        
+    - name: Create Nginx temp directories
+      file:
+        path: "{{item}}"    
+        state: directory
+        owner: vagrant
+        group: root
+        mode: 0700
+      with_items:
+        - /tmp/nginx
+        - /tmp/nginx/cache
+        - /tmp/nginx/client_temp
+        - /tmp/nginx/fastcgi_temp
+        - /tmp/nginx/lib
+        - /tmp/nginx/proxy_temp
+        - /tmp/nginx/scgi_temp
+        - /tmp/nginx/uwsgi_temp
+        
+    - name: Copy nginx config
+      copy:
+        src: nginx/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: 0644
+        
+    - name: Copy nginx config
+      copy:
+        src: nginx/magento.conf
+        dest: /etc/nginx/magento.conf
+        owner: root
+        group: root
+        mode: 0644
+       
+  ### install php7 + fpm
+    - name: Adding PHP7.0 APT repository key
+      apt_key:
+        url: "http://www.dotdeb.org/dotdeb.gpg"
+        state: present
+
+    - name: Add official PHP7.0 APT repository
+      apt_repository:
+        repo: "deb http://packages.dotdeb.org jessie all"
+        state: present
+        filename: 'php'
+        
+    - name: Add official PHP7.0 APT repository
+      apt_repository:
+        repo: "deb-src http://packages.dotdeb.org jessie all"
+        state: present
+        filename: 'php'
+
+    - name: Install PHP7.0 CLI
+      apt:
+        name: php7.0
+        state: present
+        cache_valid_time: 3600
+
+    - name: Install PHP7.0 CLI & FPM with extensions
+      apt: name={{item}} state=present update_cache=yes
+      with_items:
+        - php7.0-cli
+        - php7.0-fpm
+        - php7.0-mysql
+        - php7.0-mcrypt
+        - php7.0-curl
+        - php7.0-gd
+        - php7.0-intl
+        - php7.0-xml
+        - php7.0-xsl
+        - php7.0-zip
+        - php7.0-mbstring
+        - php7.0-bcmath
+      
+    - name: Copy PHP FPM config
+      copy:
+        src: php/www.conf
+        dest: /etc/php/7.0/fpm/pool.d/www.conf
+        owner: root
+        group: root
+        mode: 0644
+        
+    - name: Bump PHP FPM memory limit
+      ini_file: dest=/etc/php/7.0/fpm/php.ini section=PHP option=memory_limit value=2G backup=yes
+      
+    - name: Bump PHP CLI memory limit
+      ini_file: dest=/etc/php/7.0/cli/php.ini section=PHP option=memory_limit value=2G backup=yes
+        
+    - name: Restart Nginx
+      service:
+       name: nginx
+       state: restarted
+       
+    - name: Restart PHP-FPM
+      service:
+       name: php7.0-fpm
+       state: restarted
+        
+  ### install composer
+    - name: Download composer
+      get_url:
+        url: https://getcomposer.org/installer
+        dest: /tmp/installer
+      tags: composer
+
+    - name: Install composer
+      shell: cat /tmp/installer | php -- --install-dir=/usr/local/bin
+      args:
+        creates: /usr/local/bin/composer
+      tags: composer
+
+    - name: Rename composer.phar to composer
+      shell: mv /usr/local/bin/composer.phar /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
+      tags: composer
+
+    - name: Make composer executable
+      file: 
+        path: /usr/local/bin/composer
+        mode: a+x
+        state: file
+      tags: composer
+            
+    ### install MariaDB 10.1.20
+    
+    - name: Maria DB pre-requisites 
+      apt:
+        name: software-properties-common
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: MariaDB APT repository key
+      apt_key: 
+        keyserver=keyserver.ubuntu.com
+        id=0xcbcb082a1bb943db
+      
+    - name: Add official MariaDB APT repository
+      apt_repository:
+        repo: "deb [arch=amd64,i386] http://mirrors.accretive-networks.net/mariadb/repo/10.1/debian jessie main"
+        state: present
+        filename: 'mariadb'
+        
+    - name: Add official MariaDB APT repository
+      apt_repository:
+        repo: "deb-src http://mirrors.accretive-networks.net/mariadb/repo/10.1/debian jessie main"
+        state: present
+        filename: 'mariadb'
+    
+    - name: Install MariaDB server
+      apt:
+        name: mariadb-server
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Change MariaDB auto_increment_increment to 3
+      ini_file: dest=/etc/mysql/my.cnf section=mysqld option=auto_increment_increment value=3 backup=yes
+      
+    - name: Create mysql database
+      mysql_db:
+        name: "{{ mysql_database }}"
+        state: present
+        
+    - name: Create mysql user
+      mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_pass }}"
+        priv: "{{ mysql_database }}.*:ALL"
+        state: present   
+      
+  ### Install magneto-cloud
+    - name: Install Magento Cloud CLI
+      command: bash -c "curl -sS https://accounts.magento.cloud/cli/installer | php"
+      become: yes
+      become_user: vagrant
+      
+    - name: Source Magneto CLI Bash command shortcut
+      command: bash -c "source ~/.bashrc"
+      become: yes
+      become_user: vagrant
+      
+  ### Setup Magento cron jobs
+    - name: "Magneto cron:run"
+      cron:
+        name: "Magneto cron:run"
+        user: vagrant
+        job: 'php /app/bin/magento cron:run | grep -v "Ran jobs by schedule" >> /app/var/log/magento.cron.log'
+      
+    - name: "Magneto cron.php"
+      cron:
+        name: "Magneto cron.php"
+        user: vagrant
+        job: "php /app/update/cron.php >> /app/var/log/update.cron.log"
+      
+    - name: "Magneto cron setup:cron:run"
+      cron:
+        name: "Magneto cron setup:cron:run"
+        user: vagrant
+        job: "php /app/bin/magento setup:cron:run >> /app/var/log/setup.cron.log"
+      
+      
+  ############# We have to log in to Magneto Cloud manually, so... follow the guide
+    #- name: Login to Magento Cloud
+    #  expect:
+    #    command: bash -c "sudo -u vagrant /home/vagrant/.magento-cloud/bin/magento-cloud login"
+    #    responses:
+    #      (?i)address: "{{ magento_username }}"
+    #      (?i)password: "{{ magento_password }}"
+          
+    #- name: Check out code environment
+    #  command: bash -c "sudo -u vagrant /home/vagrant/.magento-cloud/bin/magento-cloud get -- {{ magento_project_id }} /app {{ magento_project_id }}"
+    
+  ## Manual steps:    
+  # http://devdocs.magento.com/guides/v2.1/cloud/access-acct/set-up-env.html
+  
+    # log in to VM
+    # $ git config --global user.name "<your name>"
+    # $ git config --global user.email <your e-mail address>
+    # $ magento-cloud auth:login
+    # $ magento-cloud get -- {{ magento_project_id }} /app
+    # $ cd /app
+    # $ composer install
+    # $ find var vendor pub/static pub/media app/etc -type f -exec chmod g+w {} \;
+    # $ find var vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} \;
+    # $ chown -R :vagrant .
+    # $ chmod u+x bin/magento
+    # change local hosts file to: 10.22.22.100 {{ site_url }}
+    # magento setup:install --base-url="http://{{ site_url }}" --db-host=localhost --db-name="{{ mysql_database }}" --db-user="{{ mysql_user }}" --db-password="{{ mysql_pass }}" --admin-firstname=Magento --admin-lastname=Admin --admin-email="{{ admin_email }}" --admin-user="{{ admin_user }} --admin-password="{{ admin_password }}" --language=en_US --currency=USD --timezone=America/Los_Angeles --use-rewrites=1

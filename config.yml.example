@@ -1,0 +1,13 @@
+magentocloud:
+  project_name: 'master'
+  project_id: 'magento'
+  project_environment: 'master'
+  project_ssh_key: '~/.ssh/id_rsa'
+  project_ssh_key_pub: '~/.ssh/id_rsa.pub'
+vagrantfile:
+  vm:
+    hostname_base: 'my-site.local'
+    memory: '2560'
+    cpus: '2'
+    network:
+      private_network: 10.22.22.100
