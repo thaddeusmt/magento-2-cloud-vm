@@ -4,6 +4,7 @@ magentocloud:
   project_environment: 'master'
   project_ssh_key: '~/.ssh/id_rsa'
   project_ssh_key_pub: '~/.ssh/id_rsa.pub'
+  project_dir: 'app'
 vagrantfile:
   vm:
     hostname_base: 'my-site.local'
