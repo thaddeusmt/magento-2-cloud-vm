@@ -72,8 +72,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   # We disable the synced folder on first boot, so we can put the platform project in the proper folder, and then share it.
-  config.vm.synced_folder "#{project['project_dir']}", "/app", id: "app", type: "nfs", create: true
-
+  #
+  # Mac OS X Note - if using NFS, install `vagrant plugin install vagrant-bindfs` in order to manage the nfs user/group mappings
+  # Otherwise the app code won't be a part of the web user's group, and Magento won't be able to write to the file structure
+  # properly. And it will be dog slow. Be sure that the app code is owned by vagrant:vagrant when all is said and done. If it
+  # is owned by `501:dialout` (or `501:20`), something is wrong.
+  if Vagrant.has_plugin?('vagrant-bindfs')
+    config.vm.synced_folder "app", "/var/nfs", id: "app", type: "nfs"
+    config.bindfs.bind_folder "/var/nfs", "/app", after: :provision
+  else 
+    config.vm.synced_folder "app", "/app", id: "app", type: "nfs", create: true
+  end
   # Magento repo Git keys
   config.vm.provision "file", source: "#{project['project_ssh_key']}", destination: "~/.ssh/id_rsa"
   config.vm.provision "file", source: "#{project['project_ssh_key_pub']}", destination: "~/.ssh/id_rsa.pub"

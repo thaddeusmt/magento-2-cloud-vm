@@ -18,6 +18,11 @@ In the `setup:install` command be sure to use the same `{{ mysql_database }}` et
 
 Quick run through on how to get started:
 
+***Quick Note for Mac OS X Users:*** 
+Make sure to install the bindfs vagrant plugin before starting. This manages the NFS user/group mapping between the guest and host, which is necessary for Magento to write to the filesystem properly. 
+`vagrant plugin install vagrant-bindfs`
+In the end, the application code should be owned by `vagrant:vagrant`. When ssh'd into the vm, if you see that the app code is owned by `501:dialout` or `501:2x`, something is wrong. Mostly likely the slow Magento experience will be your first clue.
+
 1. Change local hosts file to: `10.22.22.100 {{ site_url }}` to access VM site via local browser
 2. Install Vagrant and Virtualbox
 3. Install Ansible locally
