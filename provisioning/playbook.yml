@@ -11,7 +11,7 @@
     - name: update apt cache
       apt: update_cache=yes
       
-    - name: Install packages and python
+    - name: Install packages and python and ruby
       apt: name={{item}} state=present update_cache=yes
       with_items:
         - python
@@ -23,10 +23,32 @@
         - python-pip
         - libmysqlclient-dev
         - python-mysqldb
+        - sqlite3
+        - libsqlite3-dev
+        - ruby-dev
+        - rubygems
+        
+    - name: Remove apache
+      apt:
+        name: apache2
+        state: absent
         
     - name: Install Python python pexpect
       pip:
         name: pexpect
+        
+  ### install mailcatcher
+    - name: MailCatcher | Install MailCatcher
+      action: command gem install mailcatcher creates=/usr/local/bin/mailcatcher
+
+    - name: MailCatcher | Configure FPM PHP.ini
+      command: sed -ir "s/;\?sendmail_path =.*/sendmail_path = \/usr\/bin\/env \/usr\/local\/bin\/catchmail/" /etc/php/7.0/fpm/php.ini
+
+    - name: MailCatcher | Configure CLI PHP.ini
+      command: sed -ir "s/;\?sendmail_path =.*/sendmail_path = \/usr\/bin\/env \/usr\/local\/bin\/catchmail/" /etc/php/7.0/cli/php.ini
+
+    - name: MailCatcher | Configure Systemd Autostart Script
+      template: src=mailcatcher/mailcatcher_init.conf dest=/lib/systemd/system/mailcatcher.service
         
 
   ### install nginx
@@ -224,7 +246,7 @@
         name: "{{ mysql_user }}"
         password: "{{ mysql_pass }}"
         priv: "{{ mysql_database }}.*:ALL"
-        state: present   
+        state: present
       
   ### Install magneto-cloud
     - name: Install Magento Cloud CLI

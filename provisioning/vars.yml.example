@@ -14,3 +14,10 @@ admin_username:
 admin_password:
 admin_url: 
 
+# mailcatcher settings
+mailcatcher_ip: 0.0.0.0
+mailcatcher_smtp_ip: 0.0.0.0
+mailcatcher_smtp_port: 1025
+mailcatcher_http_ip: 0.0.0.0
+mailcatcher_http_port: 1080
+

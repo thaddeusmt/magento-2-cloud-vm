@@ -44,6 +44,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
   # Mysql connection for VM host access
   # config.vm.network "forwarded_port", guest: 3306, host: 3306, protocol: 'tcp'
+  
+  # Mailcatcher web interface
+  config.vm.network "forwarded_port", guest: 1080, host: 1080, protocol: 'tcp'
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
@@ -78,11 +81,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # properly. And it will be dog slow. Be sure that the app code is owned by vagrant:vagrant when all is said and done. If it
   # is owned by `501:dialout` (or `501:20`), something is wrong.
   if Vagrant.has_plugin?('vagrant-bindfs')
+    puts 'INFO:  vagrant-bindfs plugin detected, mounting /var/nfs dir'
     config.vm.synced_folder "app", "/var/nfs", id: "app", type: "nfs"
     config.bindfs.bind_folder "/var/nfs", "/app", after: :provision
   else 
+    puts 'INFO:  Mounting /app dir with nfs'
     config.vm.synced_folder "app", "/app", id: "app", type: "nfs", create: true
   end
+  # disable default syned folder
+  config.vm.synced_folder '.', '/vagrant', disabled: true
   # Magento repo Git keys
   config.vm.provision "file", source: "#{project['project_ssh_key']}", destination: "~/.ssh/id_rsa"
   config.vm.provision "file", source: "#{project['project_ssh_key_pub']}", destination: "~/.ssh/id_rsa.pub"
