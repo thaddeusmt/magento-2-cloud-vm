@@ -5,6 +5,8 @@ magentocloud:
   project_ssh_key: '~/.ssh/id_rsa'
   project_ssh_key_pub: '~/.ssh/id_rsa.pub'
   project_dir: 'app'
+  project_vcs_ssh_key: '~/.ssh/id_rsa2'
+  project_vcs_ssh_key_pub: '~/.ssh/id_rsa2.pub'
 vagrantfile:
   vm:
     hostname_base: 'my-site.local'

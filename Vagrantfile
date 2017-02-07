@@ -93,6 +93,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Magento repo Git keys
   config.vm.provision "file", source: "#{project['project_ssh_key']}", destination: "~/.ssh/id_rsa"
   config.vm.provision "file", source: "#{project['project_ssh_key_pub']}", destination: "~/.ssh/id_rsa.pub"
+  # VCS (Bitbucket, GitHub, etc) repo Git keys
+  config.vm.provision "file", source: "#{project['project_vcs_ssh_key']}", destination: "~/.ssh/id_rsa_vcs"
+  config.vm.provision "file", source: "#{project['project_vcs_ssh_key_pub']}", destination: "~/.ssh/id_rsa_vcs.pub"
 
   # Ansible provisioning.
   # Ansible must be installed on the host machine for this
